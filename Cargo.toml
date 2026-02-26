@@ -1,0 +1,25 @@
+[package]
+name = "sparkline"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+tui = ["dep:ratatui-core", "dep:ratatui-widgets"]
+pixels = ["dep:tiny-skia"]
+
+[dependencies]
+ratatui-core = { version = "0.1", optional = true }
+ratatui-widgets = { version = "0.3", optional = true }
+tiny-skia = { version = "0.11", optional = true }
+
+[dev-dependencies]
+ratatui = "0.30"
+
+[[example]]
+name = "tui_demo"
+required-features = ["tui"]
+
+[[example]]
+name = "pixel_demo"
+required-features = ["pixels"]

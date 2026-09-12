@@ -8,8 +8,7 @@ use crate::core::{Marker, SparkStyle, Sparkline};
 
 /// Block characters U+2581 through U+2588 (lower one-eighth to full block).
 const BLOCKS: [char; 8] = [
-    '\u{2581}', '\u{2582}', '\u{2583}', '\u{2584}',
-    '\u{2585}', '\u{2586}', '\u{2587}', '\u{2588}',
+    '\u{2581}', '\u{2582}', '\u{2583}', '\u{2584}', '\u{2585}', '\u{2586}', '\u{2587}', '\u{2588}',
 ];
 
 /// Horizontal line character for reference line rendering.
@@ -106,13 +105,7 @@ impl Widget for TuiSparkline<'_> {
 // -- Rendering internals --
 
 impl TuiSparkline<'_> {
-    fn render_bars(
-        &self,
-        data: &[Option<f64>],
-        inner: &Rect,
-        height: f64,
-        buf: &mut Buffer,
-    ) {
+    fn render_bars(&self, data: &[Option<f64>], inner: &Rect, height: f64, buf: &mut Buffer) {
         let Some((min, max)) = self.sparkline.data_range() else {
             return;
         };
@@ -158,9 +151,7 @@ impl TuiSparkline<'_> {
                         let y = inner.bottom() - 1 - row;
                         if y >= inner.top() {
                             if let Some(cell) = buf.cell_mut((x, y)) {
-                                cell.set_symbol(
-                                    BLOCKS[7].encode_utf8(&mut [0u8; 4]),
-                                );
+                                cell.set_symbol(BLOCKS[7].encode_utf8(&mut [0u8; 4]));
                                 cell.set_style(self.data_style);
                             }
                         }
@@ -171,10 +162,7 @@ impl TuiSparkline<'_> {
                         let y = inner.bottom() - 1 - full_rows;
                         if y >= inner.top() {
                             if let Some(cell) = buf.cell_mut((x, y)) {
-                                cell.set_symbol(
-                                    BLOCKS[remainder - 1]
-                                        .encode_utf8(&mut [0u8; 4]),
-                                );
+                                cell.set_symbol(BLOCKS[remainder - 1].encode_utf8(&mut [0u8; 4]));
                                 cell.set_style(self.data_style);
                             }
                         }
@@ -216,13 +204,7 @@ impl TuiSparkline<'_> {
         }
     }
 
-    fn render_winloss(
-        &self,
-        data: &[Option<f64>],
-        inner: &Rect,
-        height: f64,
-        buf: &mut Buffer,
-    ) {
+    fn render_winloss(&self, data: &[Option<f64>], inner: &Rect, height: f64, buf: &mut Buffer) {
         let threshold = self.sparkline.reference_value().unwrap_or(0.0);
         let midpoint = inner.y + (height / 2.0).floor() as u16;
         let half = (height / 2.0).floor() as u16;
@@ -240,9 +222,7 @@ impl TuiSparkline<'_> {
                     for y in top..midpoint {
                         if y >= inner.top() && y < inner.bottom() {
                             if let Some(cell) = buf.cell_mut((x, y)) {
-                                cell.set_symbol(
-                                    BLOCKS[7].encode_utf8(&mut [0u8; 4]),
-                                );
+                                cell.set_symbol(BLOCKS[7].encode_utf8(&mut [0u8; 4]));
                                 cell.set_style(self.data_style);
                             }
                         }
@@ -254,9 +234,7 @@ impl TuiSparkline<'_> {
                     for y in midpoint..bot {
                         if y >= inner.top() && y < inner.bottom() {
                             if let Some(cell) = buf.cell_mut((x, y)) {
-                                cell.set_symbol(
-                                    BLOCKS[7].encode_utf8(&mut [0u8; 4]),
-                                );
+                                cell.set_symbol(BLOCKS[7].encode_utf8(&mut [0u8; 4]));
                                 cell.set_style(self.data_style);
                             }
                         }

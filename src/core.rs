@@ -20,6 +20,7 @@ pub struct Sparkline {
     style: SparkStyle,
     markers: Vec<Marker>,
     reference_line: Option<f64>,
+    y_padding: Option<f64>,
 }
 
 impl Sparkline {
@@ -57,6 +58,16 @@ impl Sparkline {
         self
     }
 
+    /// Pad the y-axis range by this fraction on each side.
+    ///
+    /// For example, `y_padding(0.2)` expands the range by 20% above
+    /// and below the data extent, preventing tight scaling to
+    /// min/max that amplifies noise.
+    pub fn y_padding(mut self, fraction: f64) -> Self {
+        self.y_padding = Some(fraction);
+        self
+    }
+
     // -- Accessors --
 
     pub fn data(&self) -> &[Option<f64>] {
@@ -73,6 +84,10 @@ impl Sparkline {
 
     pub fn reference_value(&self) -> Option<f64> {
         self.reference_line
+    }
+
+    pub fn y_padding_value(&self) -> Option<f64> {
+        self.y_padding
     }
 
     /// Index of the minimum present value, or `None` if data is empty.
@@ -97,9 +112,7 @@ impl Sparkline {
 
     /// Index of the last present value, or `None` if data is empty.
     pub fn current_index(&self) -> Option<usize> {
-        self.data
-            .iter()
-            .rposition(|v| v.is_some())
+        self.data.iter().rposition(|v| v.is_some())
     }
 
     /// Returns `(min, max)` of present values, or `None` if no data.

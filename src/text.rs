@@ -4,8 +4,7 @@ use crate::core::{SparkStyle, Sparkline};
 
 /// Block characters U+2581 through U+2588 (lower one-eighth to full block).
 const BLOCKS: [char; 8] = [
-    '\u{2581}', '\u{2582}', '\u{2583}', '\u{2584}',
-    '\u{2585}', '\u{2586}', '\u{2587}', '\u{2588}',
+    '\u{2581}', '\u{2582}', '\u{2583}', '\u{2584}', '\u{2585}', '\u{2586}', '\u{2587}', '\u{2588}',
 ];
 
 const UPPER_HALF: char = '\u{2580}';
@@ -55,7 +54,7 @@ fn write_winloss(sparkline: &Sparkline, f: &mut fmt::Formatter<'_>) -> fmt::Resu
             Some(v) if *v < threshold => {
                 f.write_str(LOWER_HALF.encode_utf8(&mut [0u8; 4]))?;
             }
-            Some(_) => f.write_str(" ")?,  // exactly at threshold
+            Some(_) => f.write_str(" ")?, // exactly at threshold
             None => f.write_str(" ")?,
         }
     }
@@ -74,7 +73,12 @@ mod tests {
         assert_eq!(chars.len(), 8);
         // Each character should be >= the previous one
         for pair in chars.windows(2) {
-            assert!(pair[0] <= pair[1], "{:?} should be <= {:?}", pair[0], pair[1]);
+            assert!(
+                pair[0] <= pair[1],
+                "{:?} should be <= {:?}",
+                pair[0],
+                pair[1]
+            );
         }
         assert_eq!(chars[0], BLOCKS[0]);
         assert_eq!(chars[7], BLOCKS[7]);
@@ -97,8 +101,7 @@ mod tests {
 
     #[test]
     fn winloss_above_below_threshold() {
-        let s = Sparkline::from_values(&[1.0, -1.0, 0.0])
-            .style(SparkStyle::WinLoss);
+        let s = Sparkline::from_values(&[1.0, -1.0, 0.0]).style(SparkStyle::WinLoss);
         let chars: Vec<char> = s.to_string().chars().collect();
         assert_eq!(chars[0], UPPER_HALF);
         assert_eq!(chars[1], LOWER_HALF);
@@ -111,9 +114,9 @@ mod tests {
             .style(SparkStyle::WinLoss)
             .reference_line(4.0);
         let chars: Vec<char> = s.to_string().chars().collect();
-        assert_eq!(chars[0], UPPER_HALF);  // 5 > 4
-        assert_eq!(chars[1], LOWER_HALF);  // 3 < 4
-        assert_eq!(chars[2], ' ');          // 4 == 4
+        assert_eq!(chars[0], UPPER_HALF); // 5 > 4
+        assert_eq!(chars[1], LOWER_HALF); // 3 < 4
+        assert_eq!(chars[2], ' '); // 4 == 4
     }
 
     #[test]
@@ -125,8 +128,12 @@ mod tests {
     #[test]
     fn bar_style_renders_same_as_line() {
         let data = &[1.0, 4.0, 2.0, 7.0, 3.0];
-        let line = Sparkline::from_values(data).style(SparkStyle::Line).to_string();
-        let bar = Sparkline::from_values(data).style(SparkStyle::Bar).to_string();
+        let line = Sparkline::from_values(data)
+            .style(SparkStyle::Line)
+            .to_string();
+        let bar = Sparkline::from_values(data)
+            .style(SparkStyle::Bar)
+            .to_string();
         assert_eq!(line, bar);
     }
 }

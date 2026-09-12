@@ -62,10 +62,7 @@ impl<'a> PixelSparkline<'a> {
         self
     }
 
-    pub fn current_marker_color(
-        mut self,
-        color: Color,
-    ) -> Self {
+    pub fn current_marker_color(mut self, color: Color) -> Self {
         self.current_marker_color = color;
         self
     }
@@ -95,14 +92,7 @@ impl<'a> PixelSparkline<'a> {
         self
     }
 
-    pub fn render(
-        &self,
-        pixmap: &mut Pixmap,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
-    ) {
+    pub fn render(&self, pixmap: &mut Pixmap, x: f32, y: f32, width: f32, height: f32) {
         if width <= 0.0 || height <= 0.0 {
             return;
         }
@@ -141,7 +131,7 @@ impl<'a> PixelSparkline<'a> {
 
 impl PixelSparkline<'_> {
     /// Map a data value to a y-pixel coordinate (top = max, bottom = min).
-    fn value_to_y(&self, v: f64, min: f64, span: f64, y: f32, height: f32) -> f32 {
+    pub fn value_to_y(&self, v: f64, min: f64, span: f64, y: f32, height: f32) -> f32 {
         let padding = self.stroke_width;
         let usable = height - 2.0 * padding;
         if span == 0.0 {
@@ -153,7 +143,7 @@ impl PixelSparkline<'_> {
     }
 
     /// X coordinate for data point at index `i`.
-    fn index_to_x(&self, i: usize, n: usize, x: f32, width: f32) -> f32 {
+    pub fn index_to_x(&self, i: usize, n: usize, x: f32, width: f32) -> f32 {
         if n <= 1 {
             x + width / 2.0
         } else {
@@ -161,33 +151,36 @@ impl PixelSparkline<'_> {
         }
     }
 
-    /// Data range expanded to include the reference line.
+    /// Data range expanded for padding and reference lines.
     ///
+    /// When `y_padding` is set, the range is expanded by that
+    /// fraction on each side (e.g. 0.2 adds 20% above and below).
     /// When the reference value falls outside the data range, the
     /// range is stretched so the reference line sits at 80% from
     /// the bottom (20% headroom above or below).
-    fn effective_range(&self) -> Option<(f64, f64)> {
+    pub fn effective_range(&self) -> Option<(f64, f64)> {
         let (mut lo, mut hi) = self.sparkline.data_range()?;
+
+        // Apply padding first.
+        if let Some(frac) = self.sparkline.y_padding_value() {
+            let span = hi - lo;
+            let pad = span * frac;
+            lo -= pad;
+            hi += pad;
+        }
+
+        // Then expand for reference line if needed.
         if let Some(rv) = self.sparkline.reference_value() {
             if rv > hi {
-                // Expand top so rv lands at 80% from bottom.
                 hi = lo + (rv - lo) / 0.8;
             } else if rv < lo {
-                // Expand bottom so rv lands at 20% from bottom.
                 lo = hi - (hi - rv) / 0.8;
             }
         }
         Some((lo, hi))
     }
 
-    fn render_line(
-        &self,
-        pixmap: &mut Pixmap,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
-    ) {
+    fn render_line(&self, pixmap: &mut Pixmap, x: f32, y: f32, width: f32, height: f32) {
         let data = self.sparkline.data();
         let Some((min, max)) = self.effective_range() else {
             return;
@@ -256,7 +249,13 @@ impl PixelSparkline<'_> {
                 let mut paint = Paint::default();
                 paint.set_color(fill_color);
                 paint.anti_alias = true;
-                pixmap.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+                pixmap.fill_path(
+                    &path,
+                    &paint,
+                    FillRule::Winding,
+                    Transform::identity(),
+                    None,
+                );
             }
         }
 
@@ -275,14 +274,7 @@ impl PixelSparkline<'_> {
         }
     }
 
-    fn render_bars(
-        &self,
-        pixmap: &mut Pixmap,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
-    ) {
+    fn render_bars(&self, pixmap: &mut Pixmap, x: f32, y: f32, width: f32, height: f32) {
         let data = self.sparkline.data();
         let Some((min, max)) = self.effective_range() else {
             return;
@@ -310,14 +302,7 @@ impl PixelSparkline<'_> {
         }
     }
 
-    fn render_winloss(
-        &self,
-        pixmap: &mut Pixmap,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
-    ) {
+    fn render_winloss(&self, pixmap: &mut Pixmap, x: f32, y: f32, width: f32, height: f32) {
         let data = self.sparkline.data();
         let threshold = self.sparkline.reference_value().unwrap_or(0.0);
         let n = data.len();
@@ -381,14 +366,7 @@ impl PixelSparkline<'_> {
         }
     }
 
-    fn render_markers(
-        &self,
-        pixmap: &mut Pixmap,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
-    ) {
+    fn render_markers(&self, pixmap: &mut Pixmap, x: f32, y: f32, width: f32, height: f32) {
         let Some((min, max)) = self.effective_range() else {
             return;
         };
@@ -401,18 +379,9 @@ impl PixelSparkline<'_> {
 
         for marker in self.sparkline.markers() {
             let (idx, color) = match marker {
-                Marker::Min => (
-                    self.sparkline.min_index(),
-                    self.min_marker_color,
-                ),
-                Marker::Max => (
-                    self.sparkline.max_index(),
-                    self.max_marker_color,
-                ),
-                Marker::Current => (
-                    self.sparkline.current_index(),
-                    self.current_marker_color,
-                ),
+                Marker::Min => (self.sparkline.min_index(), self.min_marker_color),
+                Marker::Max => (self.sparkline.max_index(), self.max_marker_color),
+                Marker::Current => (self.sparkline.current_index(), self.current_marker_color),
             };
             paint.set_color(color);
 

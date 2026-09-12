@@ -151,17 +151,29 @@ impl PixelSparkline<'_> {
         }
     }
 
-    /// Data range expanded for padding and reference lines.
+    /// Data range widened to the minimum span, then for padding,
+    /// then for the reference line.
     ///
-    /// When `y_padding` is set, the range is expanded by that
-    /// fraction on each side (e.g. 0.2 adds 20% above and below).
-    /// When the reference value falls outside the data range, the
-    /// range is stretched so the reference line sits at 80% from
-    /// the bottom (20% headroom above or below).
+    /// When `min_span` is set and the data spans less, the range is
+    /// that span centered on the data. When `y_padding` is set, the
+    /// range is expanded by that fraction on each side (e.g. 0.2
+    /// adds 20% above and below). When the reference value falls
+    /// outside the range, the range is stretched so the reference
+    /// line sits at 80% from the bottom (20% headroom above or
+    /// below).
     pub fn effective_range(&self) -> Option<(f64, f64)> {
         let (mut lo, mut hi) = self.sparkline.data_range()?;
 
-        // Apply padding first.
+        // The floor first, so padding scales the floored span.
+        if let Some(min_span) = self.sparkline.min_span_value() {
+            if hi - lo < min_span {
+                let mid = (lo + hi) / 2.0;
+                lo = mid - min_span / 2.0;
+                hi = mid + min_span / 2.0;
+            }
+        }
+
+        // Then padding.
         if let Some(frac) = self.sparkline.y_padding_value() {
             let span = hi - lo;
             let pad = span * frac;
@@ -418,4 +430,38 @@ fn circle_path(cx: f32, cy: f32, r: f32) -> Option<Path> {
     pb.cubic_to(cx + k, cy - r, cx + r, cy - k, cx + r, cy);
     pb.close();
     pb.finish()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn range(sparkline: &Sparkline) -> (f64, f64) {
+        PixelSparkline::new(sparkline).effective_range().unwrap()
+    }
+
+    #[test]
+    fn a_minimum_span_holds_the_range_open_around_steady_data() {
+        let steady = Sparkline::from_values(&[50.0, 50.1, 49.9, 50.0]).min_span(2.0);
+        let (lo, hi) = range(&steady);
+        assert!(
+            (lo - 49.0).abs() < 1e-9 && (hi - 51.0).abs() < 1e-9,
+            "{lo}..{hi}"
+        );
+
+        let moving = Sparkline::from_values(&[40.0, 50.0]).min_span(2.0);
+        assert_eq!(range(&moving), (40.0, 50.0));
+    }
+
+    #[test]
+    fn padding_applies_after_the_floor() {
+        let steady = Sparkline::from_values(&[50.0, 50.0])
+            .min_span(2.0)
+            .y_padding(0.5);
+        let (lo, hi) = range(&steady);
+        assert!(
+            (lo - 48.0).abs() < 1e-9 && (hi - 52.0).abs() < 1e-9,
+            "{lo}..{hi}"
+        );
+    }
 }

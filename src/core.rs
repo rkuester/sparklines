@@ -21,6 +21,7 @@ pub struct Sparkline {
     markers: Vec<Marker>,
     reference_line: Option<f64>,
     y_padding: Option<f64>,
+    min_span: Option<f64>,
 }
 
 impl Sparkline {
@@ -68,6 +69,16 @@ impl Sparkline {
         self
     }
 
+    /// Never draw the y-axis range narrower than this, in data
+    /// units, centered on the data. Steady readings then draw as a
+    /// flat line instead of noise blown up to fill the box, and a
+    /// change larger than the span still fills it. Padding is
+    /// applied after the floor.
+    pub fn min_span(mut self, span: f64) -> Self {
+        self.min_span = Some(span);
+        self
+    }
+
     // -- Accessors --
 
     pub fn data(&self) -> &[Option<f64>] {
@@ -88,6 +99,10 @@ impl Sparkline {
 
     pub fn y_padding_value(&self) -> Option<f64> {
         self.y_padding
+    }
+
+    pub fn min_span_value(&self) -> Option<f64> {
+        self.min_span
     }
 
     /// Index of the minimum present value, or `None` if data is empty.
